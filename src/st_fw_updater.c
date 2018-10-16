@@ -288,8 +288,8 @@ int get_hid_status(int* enabled) {
 
 int set_flash_sleep(int enable) {
 
-    uint8_t cmd_enable[] = {0xB6, 0x00, 0x68, 0x08};
-    uint8_t cmd_disable[] = {0xB6, 0x00, 0x68, 0x0B};
+    uint8_t cmd_disable[] = {0xB6, 0x00, 0x68, 0x08};
+    uint8_t cmd_enable[] = {0xB6, 0x00, 0x68, 0x0B};
 
     if (enable) {
 
