@@ -48,7 +48,7 @@
 
 #define FW_UPDATE_MAX_RETRY     3
 
-#define VERSION 1.01
+#define VERSION 1.02
 
 int device_fd;
 
@@ -928,14 +928,7 @@ int flash_burn(firmware_file* file, int preserve_cx, int autotune_if_needed) {
     }
     
     sleep_ms(250);
-    
-    // disable HID mode
-    if (set_hid_enable(0) < 0) {
-        
-        debug_print("[ERROR] could not disable HID mode\n");
-        return -EIO;        
-    }
-    
+   
     fingertip_version_info info;
     
     if (read_fingertip_version_info(&info) < 0) {
