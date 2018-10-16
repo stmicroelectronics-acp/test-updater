@@ -287,67 +287,27 @@ int read_config_register(uint16_t address, uint32_t* data) {
     
     uint8_t address_msb = (uint8_t)((address & 0xFF00) >> 8);
     uint8_t address_lsb = (uint8_t)(address & 0xFF);
-    uint8_t cmd_config_id[] = {0xB2, address_msb, address_lsb, 0x04};
-    uint8_t cmd_pop_event[] = {0x85};
-    uint8_t fifo_event[8] = {0x00};
     
-    int found = 0;
-    
-    if (set_host_interrupt_enable(0) < 0) {
-        
-        debug_print("[ERROR] could not disable host interrupts\n");
-        return -EIO;
-    }
-    
-    if (clear_event_fifo() < 0) {
-        
-        debug_print("[ERROR] could not clear event fifo\n");
-        return -EIO;
-    }
-    
-    if (i2c_write(cmd_config_id, 4) < 0) {
-        
-        debug_print("[ERROR] could not write config id read cmd\n");
-        return -EIO;
-    }
-    
-    sleep_ms(5);
-    
-    for (int i = 0; i < 64; i++) {
-        if (i2c_write_read(cmd_pop_event, 1, fifo_event, 8) < 0) {
-            
-            debug_print("[ERROR] could not pop FIFO event\n");
-            return -EIO;
-        }        
-        
-        if (fifo_event[0] != 0x00) {
-            
-            debug_print("[INFO] fifo event: %02X %02X %02X %02X %02X %02X %02X %02X\n", fifo_event[0], fifo_event[1], fifo_event[2], fifo_event[3], fifo_event[4], fifo_event[5], fifo_event[6], fifo_event[7]);
-        }
-        
-        
-        if (fifo_event[0] == 0x12 && fifo_event[1] == cmd_config_id[1] && fifo_event[2] == cmd_config_id[2]) {
-            
-            *data = (uint32_t)((fifo_event[3] << 24) + (fifo_event[4] << 16) + (fifo_event[5] << 8) + fifo_event[6]); 
-            debug_print("[INFO] config register @0x%04X = 0x%08X\n", address, *data);
-            found = 1;
-            break;
-        }
-            
-    } 
-    
-    if (set_host_interrupt_enable(1) < 0) {
-        
-        debug_print("[ERROR] could not enable host interrupts\n");
-        return -EIO;
-    }
-    
-    if (!found) {
-        
+    uint8_t cmd_w[] = {0xB3, 0x00, 0x10};
+    uint8_t cmd_r[] = {0xB1, address_msb, address_lsb};
+    uint8_t read_buff[5] = {0x00};
+
+    if (i2c_write(cmd_w, 3) < 0) {
+
         debug_print("[ERROR] could not read config register\n");
         return -EIO;
     }
-    
+
+    if (i2c_write_read(cmd_r, 3, read_buff, 5) < 0) {
+
+        debug_print("[ERROR] could not read config register\n");
+        return -EIO;
+    }
+
+    *data = (uint32_t)((read_buff[1] << 24) + (read_buff[2] << 16) + (read_buff[3] << 8) + read_buff[4]);
+
+    debug_print("[INFO] config reg @%04X: %08X\n", address, *data);
+
     return 0;
     
 }
