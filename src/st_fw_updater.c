@@ -1155,6 +1155,7 @@ int main(int argc, char** argv) {
     char command[64];
     char arg1[512];
     char arg2[512];
+    int ret = 0;
 
     if (argc < 3) {
         
@@ -1322,7 +1323,7 @@ int main(int argc, char** argv) {
                 
                 debug_print("[INFO] attempting fw update, retry %d / %d...\n", (i+1), FW_UPDATE_MAX_RETRY);
                 
-                int ret = flash_burn(&file, 1, 1);
+                ret = flash_burn(&file, 1, 1);
                 
                 if (ret == 0) {
                                                             
