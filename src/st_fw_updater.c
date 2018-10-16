@@ -247,7 +247,7 @@ int set_hid_enable(int enable) {
             return -EIO;
         }
         
-        sleep_ms(10);
+        sleep_ms(50);
         
 
     }     
@@ -281,6 +281,34 @@ int get_hid_status(int* enabled) {
     
     return -EIO;
     
+}
+
+int set_flash_sleep(int enable) {
+
+    uint8_t cmd_enable[] = {0xB6, 0x00, 0x68, 0x08};
+    uint8_t cmd_disable[] = {0xB6, 0x00, 0x68, 0x0B};
+
+    if (enable) {
+
+        if (i2c_write(cmd_enable, 4) < 0) {
+            
+           debug_print("[ERROR} could not enable flash sleep\n");
+           return -EIO;
+        }
+
+    } else {
+
+        if (i2c_write(cmd_disable, 4) < 0) {
+
+	   debug_print("[ERROR] could not disable flash sleep\n");
+           return -EIO;
+	}
+
+    }
+
+    debug_print("[INFO] flash sleep enable: %d\n", enable);
+    return 0;
+
 }
 
 int read_config_register(uint16_t address, uint32_t* data) {
@@ -468,6 +496,11 @@ int read_fingertip_version_info(fingertip_version_info* info) {
     uint8_t chip_id[8] = {0x00};
     int offset = 1;
     uint32_t config_reg = 0;
+
+    if (set_flash_sleep(0) < 0) {
+
+        return -EIO;
+    }
     
     if (set_hid_enable(0) < 0) {
         
