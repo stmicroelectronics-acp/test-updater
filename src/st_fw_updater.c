@@ -48,7 +48,10 @@
 
 #define FW_UPDATE_MAX_RETRY     3
 
-#define VERSION 1.02
+#define VERSION 1.03
+
+#define EAUTOTUNE 1
+#define EFWUPDATE 2
 
 int device_fd;
 
@@ -975,7 +978,7 @@ int flash_burn(firmware_file* file, int preserve_cx, int autotune_if_needed) {
         if (info.fw_version != file->fw_version) {
         
             debug_print("[ERROR] fw version mismatch after flash burn\n");
-            return -EIO;
+            return -EFWUPDATE;
         }                
     }
     
@@ -984,7 +987,7 @@ int flash_burn(firmware_file* file, int preserve_cx, int autotune_if_needed) {
         if (info.config_id != file->config_id) {
         
             debug_print("[ERROR] config id mismatch after flash burn\n");
-            return -EIO;
+            return -EFWUPDATE;
         }                
     }
     
@@ -998,7 +1001,7 @@ int flash_burn(firmware_file* file, int preserve_cx, int autotune_if_needed) {
             if (autotune() < 0) {
                 
                 debug_print("[ERROR] could not perform autotune\n");
-                return -EIO;
+                return -EAUTOTUNE;
             }
             
             debug_print("[INFO] autotune completed successfully\n");
@@ -1152,7 +1155,7 @@ int main(int argc, char** argv) {
     char command[64];
     char arg1[512];
     char arg2[512];
-    
+
     if (argc < 3) {
         
         print_usage();
@@ -1347,7 +1350,7 @@ int main(int argc, char** argv) {
             free(file.cx_data);
             
             close(device_fd);
-            return (EXIT_FAILURE);            
+            return ret;            
         }
     }
     
