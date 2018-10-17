@@ -35,7 +35,7 @@
 
 #define debug_print(fmt, ...) do { if (DEBUG) printf(fmt, ##__VA_ARGS__); } while (0)
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define I2C_SLAVE_ADDRESS       0x49
 #define FTB_HEADER_LENGTH       64
@@ -283,100 +283,6 @@ int get_hid_status(int* enabled) {
     debug_print("[ERROR] unexpected chip id: %02X %02X %02X\n", chip_id[0], chip_id[1], chip_id[2]);
     
     return -EIO;
-    
-}
-
-int set_flash_sleep(int enable) {
-
-    uint8_t cmd_disable[] = {0xB6, 0x00, 0x68, 0x08};
-    uint8_t cmd_enable[] = {0xB6, 0x00, 0x68, 0x0B};
-
-    if (enable) {
-
-        if (i2c_write(cmd_enable, 4) < 0) {
-            
-           debug_print("[ERROR} could not enable flash sleep\n");
-           return -EIO;
-        }
-
-    } else {
-
-        if (i2c_write(cmd_disable, 4) < 0) {
-
-	   debug_print("[ERROR] could not disable flash sleep\n");
-           return -EIO;
-	}
-
-    }
-
-    debug_print("[INFO] flash sleep enable: %d\n", enable);
-    return 0;
-
-}
-
-int read_config_register(uint16_t address, uint32_t* data) {
-    
-    uint8_t address_msb = (uint8_t)((address & 0xFF00) >> 8);
-    uint8_t address_lsb = (uint8_t)(address & 0xFF);
-    
-    uint8_t cmd_w[] = {0xB3, 0x00, 0x10};
-    uint8_t cmd_r[] = {0xB1, address_msb, address_lsb};
-    uint8_t read_buff[5] = {0x00};
-
-    if (i2c_write(cmd_w, 3) < 0) {
-
-        debug_print("[ERROR] could not read config register\n");
-        return -EIO;
-    }
-
-    if (i2c_write_read(cmd_r, 3, read_buff, 5) < 0) {
-
-        debug_print("[ERROR] could not read config register\n");
-        return -EIO;
-    }
-
-    *data = (uint32_t)((read_buff[1] << 24) + (read_buff[2] << 16) + (read_buff[3] << 8) + read_buff[4]);
-
-    debug_print("[INFO] config reg @%04X: %08X\n", address, *data);
-
-    return 0;
-    
-}
-
-int read_cx_version_from_cx_area(uint8_t* cx_version) {
-    
-    // request COMP_RD_MS_TCH
-    uint8_t cmd_request_host_data[] = {0xB8, 0x02, 0x00};
-    
-    uint8_t cmd_read_host_data[] = {0xD0, 0x80, 0x00};
-    
-    uint8_t buff[17];
-    
-    if (i2c_write(cmd_request_host_data, 3) < 0) {
-        
-        debug_print("[ERROR] could not request host data\n");
-        return -EIO;
-    }
-    
-    sleep_ms(50);
-    
-    if (i2c_write_read(cmd_read_host_data, 3, buff, 17) < 0) {
-        
-        debug_print("[ERROR] could not read host data\n");
-        return -EIO;
-    }
-    
-    if (buff[1] == 0xA5 && buff[2] == 0x02 && buff[3] == 0x00) {
-        *cx_version = buff[9];        
-    } else {
-        *cx_version = 0xFF;
-        debug_print("[ERROR] unexpected host data signature: %02X %02X %02X\n", buff[1], buff[2], buff[3]);
-        return -EIO;
-    }
-    
-        
-    return 0;
-    
     
 }
 
