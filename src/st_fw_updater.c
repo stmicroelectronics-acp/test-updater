@@ -35,7 +35,7 @@
 
 #define debug_print(fmt, ...) do { if (DEBUG) printf(fmt, ##__VA_ARGS__); } while (0)
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define I2C_SLAVE_ADDRESS       0x49
 #define FTB_HEADER_LENGTH       64
@@ -48,7 +48,7 @@
 
 #define FW_UPDATE_MAX_RETRY     3
 
-#define VERSION 1.03
+#define VERSION 1.05
 
 #define EAUTOTUNE 1
 #define EFWUPDATE 2
@@ -496,28 +496,28 @@ int parse_ftb_file(const char* path_to_ftb_file, firmware_file* file) {
 int read_fingertip_version_info(fingertip_version_info* info) {
     
     uint8_t cmd[] = {0xB6, 0x00, 0x04};
-    uint8_t chip_id[8] = {0x00};
-    int offset = 1;
-    uint32_t config_reg = 0;
-
-    if (set_flash_sleep(0) < 0) {
-
-        return -EIO;
-    }
+    uint8_t read_buff[8] = {0x00};
+    uint8_t sys_info_cmd[] = {0xD0, 0x00, 0x52};
     
-    if (set_hid_enable(0) < 0) {
+    int offset = 0;    
+    
+    int hid_status = 0;
         
-        debug_print("[ERROR] could not disable HID mode\n");
+    if (get_hid_status(&hid_status) < 0) {
+        
+        debug_print("[ERROR] could not get hid status\n");
         return -EIO;
-    }                    
+    }      
     
-    if (i2c_write_read(cmd, 3, chip_id, 8) < 0) {
+    offset = hid_status > 0 ? 0 : 1;
+    
+    if (i2c_write_read(cmd, 3, read_buff, 8) < 0) {
         debug_print("[ERROR] could not read chip id\n");
         return -EIO;
-    }
+    }        
     
-    info->hw_id = (uint16_t)((chip_id[offset] << 8) + chip_id[1 + offset]);
-    info->fw_version = (uint16_t)((chip_id[5 + offset] << 8) + chip_id[4 + offset]);
+    info->hw_id = (uint16_t)((read_buff[offset] << 8) + read_buff[1 + offset]);
+    info->fw_version = (uint16_t)((read_buff[5 + offset] << 8) + read_buff[4 + offset]);
     info->config_id = 0x0000;
     info->cx_version_config_area = 0x00;
     info->cx_version_cx_area = 0xFF;
@@ -527,54 +527,27 @@ int read_fingertip_version_info(fingertip_version_info* info) {
     
     if (info->fw_version != 0) {
         
-        // read the config id
-        if (read_config_register(0x0000, &config_reg) < 0) {
-        
-            debug_print("[WARNING] could not get config id\n");
-            info->fw_version = 0x0000; // fw is not running, this will force fw update
-            return 0;
+        if (i2c_write_read(sys_info_cmd, 3, read_buff, 8) < 0) {
             
-        } else {
-                                           
-            uint8_t id_lsb = (uint8_t)((config_reg & 0xFF0000) >> 16);
-            uint8_t id_msb = (uint8_t)((config_reg & 0xFF00) >> 8);
-                   
-            info->config_id = (uint16_t)((id_msb << 8) + id_lsb);
-            debug_print("[INFO] device config_id: 0x%04X\n", info->config_id);
+            debug_print("[ERROR] could not read sys info\n");
+            return -EIO;
         }
         
-        // read the cx tune version from config area                
-        if (read_config_register(0x0731, &config_reg) < 0) {
-        
-            debug_print("[WARNING] could not get config id\n");
-            info->fw_version = 0x0000; // fw is not running, this will force fw update
-            return 0;
+        if (read_buff[0 + offset] != 0x5A || read_buff[1 + offset] != 0xA5) {
             
-        } else {
-        
-            info->cx_version_config_area = (uint8_t)((config_reg & 0xFF000000) >> 24);
-            debug_print("[INFO] device cx_version_config_area: 0x%02X\n", info->cx_version_config_area);
+            debug_print("[ERROR] unexpected sys info signature: %02X%02X\n", read_buff[0 + offset], read_buff[1 + offset]);
+            return -EIO;
         }
         
-        // read the cx tune version from cx area
-        if (read_cx_version_from_cx_area(&info->cx_version_cx_area) < 0) {
-            
-            debug_print("[WARNING] could not get cx version from cx area\n");
-            info->fw_version = 0x0000; // fw is not running, this will force fw update
-            return 0;
-            
-        } else {
-            
-            debug_print("[INFO] device cx_version_cx_area: 0x%02X\n", info->cx_version_cx_area);
-        }
+        info->config_id = (uint16_t)((read_buff[3 + offset] << 8) + read_buff[2 + offset]);
+        info->cx_version_config_area = read_buff[4 + offset];
+        info->cx_version_cx_area = read_buff[5 + offset];
+                
+        debug_print("[INFO] device config_id: 0x%04X\n", info->config_id);     
+        debug_print("[INFO] device cx_version_config_area: 0x%02X\n", info->cx_version_config_area);       
+        debug_print("[INFO] device cx_version_cx_area: 0x%02X\n", info->cx_version_cx_area);
         
-    }
-                                      
-    if (set_hid_enable(1) < 0) {
-        
-        debug_print("[ERROR] could not enable HID mode\n");
-        return -EIO;
-    } 
+    }                                          
             
     return 0;
 }
