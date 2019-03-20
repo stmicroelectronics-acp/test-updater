@@ -12,8 +12,8 @@ LDLIBS += $(PC_LIBS)
 CFLAGS += $(PC_CFLAGS)
 CPPFLAGS += $(PC_CFLAGS)
 
-all: CXX_BINARY(st-updater)
+all: CXX_BINARY(st-touch-fw-updater)
 
 CXX_BINARY(st-updater): src/st_fw_updater.o
 
-clean: CLEAN(CXX_BINARY(st-updater))
+clean: CLEAN(CXX_BINARY(st-touch-fw-updater))
