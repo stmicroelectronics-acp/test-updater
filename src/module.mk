@@ -14,6 +14,6 @@ CPPFLAGS += $(PC_CFLAGS)
 
 all: CXX_BINARY(st-touch-fw-updater)
 
-CXX_BINARY(st-updater): src/st_fw_updater.o
+CXX_BINARY(st-touch-fw-updater): src/st_fw_updater.o
 
 clean: CLEAN(CXX_BINARY(st-touch-fw-updater))
