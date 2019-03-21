@@ -4,14 +4,6 @@
 
 include common.mk
 
-PC_DEPS = libchrome-$(BASE_VER)
-PC_CFLAGS := $(shell $(PKG_CONFIG) --cflags $(PC_DEPS))
-PC_LIBS := $(shell $(PKG_CONFIG) --libs $(PC_DEPS))
-LDLIBS += $(PC_LIBS)
-
-CFLAGS += $(PC_CFLAGS)
-CPPFLAGS += $(PC_CFLAGS)
-
 all: CXX_BINARY(st-touch-fw-updater)
 
 CXX_BINARY(st-touch-fw-updater): src/st_fw_updater.o
