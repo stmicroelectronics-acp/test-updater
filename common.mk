@@ -124,7 +124,6 @@ export SRC ?= $(CURDIR)
 
 # If BASE_VER is not set, read the libchrome revision number from
 # common-mk/BASE_VER file.
-BASE_VER="none"
 ifeq ($(strip $(BASE_VER)),)
 BASE_VER := $(shell cat $(SRC)/../common-mk/BASE_VER)
 endif
