@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 include common.mk
+BASE_VER="none"
 
 all: CXX_BINARY(st-touch-fw-updater)
 
